@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="es-ES">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeeClaro — Entiende cualquier texto</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --border: #e2e0da;
+    --text: #1a1a1a;
+    --muted: #7a7570;
+    --clear: #2d6a4f;
+    --clear-light: #e8f5ee;
+    --warn: #b45309;
+    --warn-light: #fef3c7;
+    --danger: #991b1b;
+    --danger-light: #fee2e2;
+    --blue: #1e40af;
+    --blue-light: #eff6ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 48px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .logo { font-size: 2.2rem; display: inline-block; margin-bottom: 6px; }
+
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  h1 span { color: var(--clear); }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 4px;
+  }
+
+  /* Main */
+  main {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  /* Input box */
+  .input-box {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .input-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    background: var(--bg);
+    resize: vertical;
+    outline: none;
+    transition: border 0.2s;
+    line-height: 1.6;
+  }
+
+  textarea:focus { border-color: var(--clear); }
+
+  .char-count {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+    margin-top: 5px;
+  }
+
+  /* Analyze button */
+  .analyze-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--clear);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .analyze-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45,106,79,0.25); }
+
+  /* Results */
+  .result-section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .result-section.visible { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Summary card */
+  .summary-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .card-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .summary-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  /* Score */
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .score-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: 'DM Mono', monospace;
+    flex-shrink: 0;
+  }
+
+  .score-info { flex: 1; }
+  .score-label { font-size: 1rem; font-weight: 600; }
+  .score-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  /* Alerts */
+  .alerts { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+
+  .alert {
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .alert.danger { background: var(--danger-light); border-left: 4px solid var(--danger); }
+  .alert.warn { background: var(--warn-light); border-left: 4px solid var(--warn); }
+  .alert.ok { background: var(--clear-light); border-left: 4px solid var(--clear); }
+  .alert.info { background: var(--blue-light); border-left: 4px solid var(--blue); }
+
+  .alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+  .alert-content { flex: 1; }
+  .alert-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; }
+  .alert-desc { font-size: 0.8rem; line-height: 1.5; color: var(--muted); }
+
+  /* Key points */
+  .key-points { list-style: none; }
+  .key-points li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+    line-height: 1.5;
+    display: flex;
+    gap: 10px;
+  }
+  .key-points li:last-child { border-bottom: none; }
+  .key-points li::before { content: '→'; color: var(--clear); font-weight: 700; flex-shrink: 0; }
+
+  /* Voice reader */
+  .voice-box {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .voice-controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  .voice-btn {
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: 1.5px solid var(--clear);
+    background: transparent;
+    color: var(--clear);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .voice-btn:hover, .voice-btn.playing { background: var(--clear); color: white; }
+  .voice-btn.stop { border-color: var(--danger); color: var(--danger); }
+  .voice-btn.stop:hover { background: var(--danger); color: white; }
+
+  .speed-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .speed-row label { font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .speed-row input { flex: 1; accent-color: var(--clear); }
+  .speed-val { font-size: 0.72rem; color: var(--clear); font-family: 'DM Mono', monospace; min-width: 32px; }
+
+  /* Reset */
+  .reset-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    padding: 4px 0;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    line-height: 1.9;
+    max-width: 600px;
+  }
+
+  footer a { color: var(--clear); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" aria-hidden="true">🔍</div>
+  <h1>Lee<span>Claro</span></h1>
+  <p class="subtitle">entiende cualquier texto · understand any text · v1.1</p>
+</header>
+
+<main aria-label="LeeClaro — analizador de textos">
+
+  <div class="input-box">
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;background:#f0ede8;border-radius:10px;padding:4px;" role="tablist">
+      <button id="tab-btn-text" class="lc-tab active" onclick="switchTab('text')" role="tab" aria-selected="true" aria-controls="tab-text" style="flex:1;padding:8px;border-radius:8px;border:none;background:#2d6a4f;color:white;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;">
+        📋 Pegar texto
+      </button>
+      <button id="tab-btn-url" class="lc-tab" onclick="switchTab('url')" role="tab" aria-selected="false" aria-controls="tab-url" style="flex:1;padding:8px;border-radius:8px;border:none;background:transparent;color:#7a7570;font-family:'DM Sans',sans-serif;font-size:0.82rem;font-weight:600;cursor:pointer;">
+        🔗 URL
+      </button>
+    </div>
+
+    <!-- Tab texto -->
+    <div id="tab-text" role="tabpanel" aria-labelledby="tab-btn-text">
+      <label class="input-label" for="input-text">Pega aquí el texto · Paste text here</label>
+      <textarea id="input-text"
+        placeholder="Pega aquí cualquier texto — condiciones de uso, contrato, aviso legal, política de privacidad, términos de servicio...&#10;&#10;LeeClaro lo analiza y te lo explica claro."
+        oninput="countChars()"
+        aria-label="Área de texto para analizar"></textarea>
+      <div class="char-count" id="char-count" aria-live="polite">0 caracteres</div>
+    </div>
+
+    <!-- Tab URL -->
+    <div id="tab-url" role="tabpanel" aria-labelledby="tab-btn-url" style="display:none;">
+      <label class="input-label" for="input-url">URL de la página · Page URL</label>
+      <input type="url" id="input-url"
+        placeholder="https://ejemplo.com/condiciones-de-uso"
+        aria-label="URL de la página a analizar"
+        style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--text);background:var(--bg);outline:none;">
+
+      <!-- Aviso transparente constructivo -->
+      <div style="margin-top:12px;padding:14px 16px;background:#eff6ff;border-left:4px solid #1e40af;border-radius:8px;" role="note" aria-label="Información sobre cómo funciona la lectura de URLs">
+        <div style="font-size:0.78rem;font-weight:700;color:#1e40af;margin-bottom:8px;">ℹ️ Cómo funciona la lectura de URLs · How URL reading works</div>
+        <div style="font-size:0.75rem;color:#1e3a8a;line-height:1.7;">
+          LeeClaro usa <strong>allorigins.win</strong> para acceder a páginas externas. Es un servicio gratuito de terceros — útil pero con limitaciones:<br><br>
+          ✅ Funciona con muchas páginas públicas<br>
+          ⚠️ Algunas páginas lo bloquean<br>
+          ⚠️ No está bajo control de Argira Station<br>
+          ⚠️ Puede cambiar o dejar de funcionar sin aviso previo<br><br>
+          <strong>Si no funciona:</strong> copia y pega el texto en la pestaña "Pegar texto" — siempre funcionará.<br><br>
+          <em>LeeClaro te informa de esto porque creemos que mereces saber exactamente qué herramientas usamos y cómo. Transparencia ante todo.</em>
+        </div>
+      </div>
+      <div id="url-status" style="font-size:0.78rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:8px;" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <button class="analyze-btn" onclick="analyzeAll()" aria-label="Analizar y clarificar">
+    🔍 Analizar y clarificar · Analyze and clarify
+  </button>
+
+  <!-- Results -->
+  <section class="result-section" id="results" aria-label="Resultados del análisis">
+
+    <!-- Score -->
+    <div class="summary-card">
+      <div class="card-title">Nivel de claridad · Clarity level</div>
+      <div class="score-row">
+        <div class="score-circle" id="score-circle" aria-label="Puntuación de claridad"></div>
+        <div class="score-info">
+          <div class="score-label" id="score-label"></div>
+          <div class="score-sub" id="score-sub"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alerts" id="alerts" role="list" aria-label="Alertas detectadas"></div>
+
+    <!-- Summary -->
+    <div class="summary-card">
+      <div class="card-title">Resumen claro · Clear summary</div>
+      <div class="summary-text" id="summary" aria-live="polite"></div>
+    </div>
+
+    <!-- Key points -->
+    <div class="summary-card">
+      <div class="card-title">Puntos clave · Key points</div>
+      <ul class="key-points" id="key-points" aria-label="Puntos clave del texto"></ul>
+    </div>
+
+    <!-- Voice reader -->
+    <div class="voice-box" role="region" aria-label="Lector de voz">
+      <div class="card-title">🔊 Lector de voz · Voice reader</div>
+      <div class="voice-controls">
+        <button class="voice-btn" id="play-btn" onclick="speakResult()" aria-label="Leer resultado en voz alta">
+          ▶ Leer en voz alta · Read aloud
+        </button>
+        <button class="voice-btn stop" id="stop-btn" onclick="stopSpeech()" aria-label="Detener lectura" style="display:none;">
+          ⏹ Detener · Stop
+        </button>
+      </div>
+      <div class="speed-row">
+        <label for="speed">Velocidad</label>
+        <input type="range" id="speed" min="0.5" max="2" step="0.1" value="0.9"
+          aria-label="Velocidad de lectura" aria-valuemin="0.5" aria-valuemax="2" aria-valuenow="0.9"
+          oninput="updateSpeed()">
+        <span class="speed-val" id="speed-val">0.9x</span>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="reset()" aria-label="Analizar otro texto">← Analizar otro texto · Analyze another text</button>
+
+  </section>
+
+</main>
+
+<footer>
+  LeeClaro v1.1 · Jose Ranero García · Argira Station 2026<br>
+  Gratuito · Offline · Sin datos · No tracking<br>
+  <a href="https://argirashield.netlify.app/" target="_blank">DOI: <a href="https://doi.org/10.5281/zenodo.19000951" target="_blank">10.5281/zenodo.19000951</a> · Argira Shield</a> ·
+  <a href="https://argira-verifica.netlify.app/" target="_blank">Verifica.</a>
+</footer>
+
+<script>
+// ═══════════════════════════════
+// PATTERNS — offline analysis
+// ═══════════════════════════════
+
+const PATTERNS = [
+  // Dangerous — red
+  { id:'pay_hidden', level:'danger', icon:'🚨',
+    title:'Cobro oculto detectado · Hidden charge detected',
+    desc:'El texto menciona pagos, cargos o suscripciones que pueden activarse automáticamente.',
+    patterns:[/se\s+cobrar[aá]/i,/cargo\s+autom[aá]tico/i,/renovaci[oó]n\s+autom[aá]tica/i,/se\s+descontar[aá]/i,/pago\s+recurrente/i,/billing/i,/subscription/i,/auto.?renew/i,/charged\s+automatically/i] },
+
+  { id:'data_sell', level:'danger', icon:'🚨',
+    title:'Cesión de datos a terceros · Data shared with third parties',
+    desc:'El texto indica que tus datos pueden compartirse o venderse a otras empresas.',
+    patterns:[/terceros/i,/third\s+parties/i,/socios\s+comerciales/i,/partners/i,/compartir\s+tus\s+datos/i,/share\s+your\s+data/i,/vender\s+datos/i,/sell.*data/i] },
+
+  { id:'unilateral_change', level:'danger', icon:'🚨',
+    title:'Pueden cambiar las condiciones sin avisar · Terms can change without notice',
+    desc:'La empresa se reserva el derecho de modificar condiciones unilateralmente.',
+    patterns:[/reservamos\s+el\s+derecho/i,/reserve\s+the\s+right/i,/podemos\s+modificar/i,/may\s+change/i,/sin\s+previo\s+aviso/i,/without\s+notice/i,/a\s+nuestra\s+discreci[oó]n/i,/at\s+our\s+discretion/i] },
+
+  { id:'suspend', level:'danger', icon:'🚨',
+    title:'Pueden suspender tu cuenta sin explicación · Account can be suspended without explanation',
+    desc:'El servicio puede cancelarse o suspenderse unilateralmente.',
+    patterns:[/suspender\s+tu\s+cuenta/i,/suspend\s+your\s+account/i,/terminar\s+el\s+servicio/i,/terminate/i,/cancelar\s+sin\s+previo/i,/cancel\s+without/i] },
+
+  // Warning — orange
+  { id:'complex_lang', level:'warn', icon:'⚠️',
+    title:'Lenguaje complejo detectado · Complex language detected',
+    desc:'El texto usa términos técnicos o legales difíciles de entender para el público general.',
+    patterns:[/en\s+virtud\s+de/i,/a\s+tenor\s+de/i,/sin\s+perjuicio\s+de/i,/no\s+obstante/i,/asimismo/i,/cláusula/i,/estipula/i,/notwithstanding/i,/hereinafter/i,/whereas/i,/pursuant/i] },
+
+  { id:'long_sentences', level:'warn', icon:'⚠️',
+    title:'Frases muy largas · Very long sentences',
+    desc:'El texto contiene frases de más de 50 palabras que dificultan la comprensión.',
+    test: text => text.split(/[.!?]/).some(s => s.split(' ').length > 50) },
+
+  { id:'irrevocable', level:'warn', icon:'⚠️',
+    title:'Licencia irrevocable sobre tu contenido · Irrevocable license on your content',
+    desc:'La empresa obtiene derechos permanentes sobre lo que publiques.',
+    patterns:[/licencia\s+irrevocable/i,/irrevocable\s+license/i,/licencia\s+perpetua/i,/perpetual\s+license/i,/worldwide.*license/i,/licencia\s+mundial/i] },
+
+  { id:'arbitration', level:'warn', icon:'⚠️',
+    title:'Arbitraje obligatorio · Mandatory arbitration',
+    desc:'Renuncias a tu derecho a demandar en tribunal ordinario.',
+    patterns:[/arbitraje\s+obligatorio/i,/mandatory\s+arbitration/i,/class\s+action/i,/waive.*right.*sue/i,/renuncia.*derecho.*demandar/i] },
+
+  // Info — blue
+  { id:'free_tier', level:'info', icon:'ℹ️',
+    title:'Mención a plan gratuito · Free plan mentioned',
+    desc:'El texto menciona un nivel gratuito. Revisa las condiciones y límites.',
+    patterns:[/plan\s+gratuito/i,/free\s+plan/i,/gratis/i,/free\s+tier/i,/sin\s+coste/i,/no\s+cost/i] },
+
+  { id:'cookies', level:'info', icon:'ℹ️',
+    title:'Uso de cookies · Cookie usage',
+    desc:'El texto menciona el uso de cookies o tecnologías de seguimiento.',
+    patterns:[/cookies/i,/rastreo/i,/tracking/i,/pixel/i,/analytics/i,/seguimiento/i] },
+
+  // OK
+  { id:'gdpr', level:'ok', icon:'✅',
+    title:'Mención a protección de datos (GDPR/LOPD) · Data protection mentioned',
+    desc:'El texto hace referencia a normativa de protección de datos.',
+    patterns:[/rgpd/i,/gdpr/i,/lopd/i,/reglamento.*protecci[oó]n/i,/data\s+protection/i,/protecci[oó]n\s+de\s+datos/i] },
+
+  { id:'delete_account', level:'ok', icon:'✅',
+    title:'Puedes eliminar tu cuenta · You can delete your account',
+    desc:'El texto indica que tienes derecho a eliminar tu cuenta y datos.',
+    patterns:[/eliminar\s+tu\s+cuenta/i,/delete\s+your\s+account/i,/derecho\s+al\s+olvido/i,/right\s+to\s+erasure/i,/borrar\s+tus\s+datos/i,/delete\s+your\s+data/i] },
+];
+
+// ═══════════════════════════════
+// ANALYSIS ENGINE
+// ═══════════════════════════════
+
+function analyze(text) {
+  if (!text) text = document.getElementById('input-text').value.trim();
+  if (!text || text.length < 30) {
+    alert('Por favor introduce un texto más largo (mínimo 30 caracteres) · Please enter a longer text');
+    return;
+  }
+
+  const found = [];
+  PATTERNS.forEach(p => {
+    let match = false;
+    if (p.patterns) match = p.patterns.some(rx => rx.test(text));
+    else if (p.test) match = p.test(text);
+    if (match) found.push(p);
+  });
+
+  // Score
+  const dangers = found.filter(f => f.level === 'danger').length;
+  const warns = found.filter(f => f.level === 'warn').length;
+  const oks = found.filter(f => f.level === 'ok').length;
+  const score = Math.max(0, Math.min(100, 100 - dangers * 25 - warns * 10 + oks * 5));
+
+  renderScore(score, dangers, warns);
+  renderAlerts(found);
+  renderSummary(text, found, score);
+  renderKeyPoints(text, found);
+
+  document.getElementById('results').classList.add('visible');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderScore(score, dangers, warns) {
+  const circle = document.getElementById('score-circle');
+  const label = document.getElementById('score-label');
+  const sub = document.getElementById('score-sub');
+
+  let color, bg, txt, subtxt;
+  if (score >= 75) {
+    color = '#2d6a4f'; bg = '#e8f5ee';
+    txt = '✅ Texto claro · Clear text';
+    subtxt = 'El texto es relativamente fácil de entender · The text is relatively easy to understand';
+  } else if (score >= 50) {
+    color = '#b45309'; bg = '#fef3c7';
+    txt = '⚠️ Precaución · Caution';
+    subtxt = 'Hay puntos que merecen atención · Some points need attention';
+  } else {
+    color = '#991b1b'; bg = '#fee2e2';
+    txt = '🚨 Texto problemático · Problematic text';
+    subtxt = 'Este texto contiene cláusulas preocupantes · This text contains concerning clauses';
+  }
+
+  circle.style.background = bg;
+  circle.style.color = color;
+  circle.textContent = score;
+  circle.setAttribute('aria-label', `Puntuación de claridad: ${score} sobre 100`);
+  label.textContent = txt;
+  label.style.color = color;
+  sub.textContent = subtxt;
+}
+
+function renderAlerts(found) {
+  const container = document.getElementById('alerts');
+  if (found.length === 0) {
+    container.innerHTML = `<div class="alert ok" role="listitem">
+      <span class="alert-icon">✅</span>
+      <div class="alert-content">
+        <div class="alert-title">No se detectaron problemas graves · No serious issues detected</div>
+        <div class="alert-desc">El texto no muestra patrones preocupantes conocidos · The text shows no known concerning patterns</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const order = { danger:0, warn:1, info:2, ok:3 };
+  found.sort((a,b) => order[a.level] - order[b.level]);
+
+  container.innerHTML = found.map(f => `
+    <div class="alert ${f.level}" role="listitem">
+      <span class="alert-icon" aria-hidden="true">${f.icon}</span>
+      <div class="alert-content">
+        <div class="alert-title">${f.title}</div>
+        <div class="alert-desc">${f.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderSummary(text, found, score) {
+  const words = text.split(/\s+/).length;
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10).length;
+  const avgWords = sentences > 0 ? Math.round(words / sentences) : 0;
+
+  const dangers = found.filter(f => f.level === 'danger');
+  const warns = found.filter(f => f.level === 'warn');
+  const oks = found.filter(f => f.level === 'ok');
+
+  let summary = `Este texto tiene ${words} palabras en ${sentences} frases (media de ${avgWords} palabras por frase). `;
+
+  if (dangers.length > 0) {
+    summary += `Se han detectado ${dangers.length} punto${dangers.length > 1 ? 's' : ''} crítico${dangers.length > 1 ? 's' : ''} que requieren atención: ${dangers.map(d => d.title.split('·')[0].trim()).join(', ')}. `;
+  }
+  if (warns.length > 0) {
+    summary += `Hay ${warns.length} aspecto${warns.length > 1 ? 's' : ''} a revisar con precaución. `;
+  }
+  if (oks.length > 0) {
+    summary += `El texto incluye ${oks.length} elemento${oks.length > 1 ? 's' : ''} positivo${oks.length > 1 ? 's' : ''} como derechos del usuario o protección de datos. `;
+  }
+  if (found.length === 0) {
+    summary += 'No se han detectado patrones problemáticos conocidos, aunque siempre es recomendable leer el texto completo con atención.';
+  }
+
+  document.getElementById('summary').textContent = summary;
+}
+
+function renderKeyPoints(text, found) {
+  const list = document.getElementById('key-points');
+  const points = [];
+
+  const words = text.split(/\s+/).length;
+  if (words > 500) points.push(`Texto largo (${words} palabras) — considera pedir una versión resumida`);
+  if (words <= 200) points.push(`Texto breve y directo (${words} palabras)`);
+
+  found.forEach(f => {
+    if (f.level === 'danger') points.push(f.title.split('·')[0].trim() + ' — léelo con mucha atención');
+    if (f.level === 'ok') points.push(f.title.split('·')[0].trim() + ' — punto positivo');
+  });
+
+  if (points.length === 0) points.push('No se detectaron puntos clave específicos — el texto parece neutro');
+
+  list.innerHTML = points.map(p => `<li role="listitem">${p}</li>`).join('');
+}
+
+// ═══════════════════════════════
+// VOICE
+// ═══════════════════════════════
+let speech = null;
+let speaking = false;
+
+function speakResult() {
+  if (speaking) return;
+  const summary = document.getElementById('summary').textContent || '';
+  const alerts = [...document.querySelectorAll('.alert-title')].map(el => el.textContent).join('. ') || '';
+  const points = [...document.querySelectorAll('.key-points li')].map(el => el.textContent).join('. ') || '';
+  const full = (summary + '. Alertas: ' + alerts + '. Puntos clave: ' + points).trim();
+  if (!full || full.length < 5) { alert('No hay contenido para leer · No content to read'); return; }
+
+  const speed = parseFloat(document.getElementById('speed').value);
+  speech = new SpeechSynthesisUtterance(full);
+  speech.lang = 'es-ES';
+  speech.rate = speed;
+
+  speech.onstart = () => {
+    speaking = true;
+    document.getElementById('play-btn').textContent = '🔊 Leyendo...';
+    document.getElementById('play-btn').classList.add('playing');
+    document.getElementById('stop-btn').style.display = 'inline-block';
+  };
+  speech.onend = () => {
+    speaking = false;
+    document.getElementById('play-btn').textContent = '▶ Leer en voz alta · Read aloud';
+    document.getElementById('play-btn').classList.remove('playing');
+    document.getElementById('stop-btn').style.display = 'none';
+  };
+  window.speechSynthesis.speak(speech);
+}
+
+function stopSpeech() {
+  window.speechSynthesis.cancel();
+  speaking = false;
+  document.getElementById('play-btn').textContent = '▶ Leer en voz alta · Read aloud';
+  document.getElementById('play-btn').classList.remove('playing');
+  document.getElementById('stop-btn').style.display = 'none';
+}
+
+function updateSpeed() {
+  const val = document.getElementById('speed').value;
+  document.getElementById('speed-val').textContent = val + 'x';
+  document.getElementById('speed').setAttribute('aria-valuenow', val);
+}
+
+// ═══════════════════════════════
+// UTILS
+// ═══════════════════════════════
+function countChars() {
+  const len = document.getElementById('input-text').value.length;
+  document.getElementById('char-count').textContent = len + ' caracteres';
+}
+
+function switchTab(tab) {
+  // Buttons
+  document.querySelectorAll('.lc-tab').forEach(b => {
+    b.style.background = 'transparent';
+    b.style.color = '#7a7570';
+    b.setAttribute('aria-selected','false');
+  });
+  const active = document.getElementById('tab-btn-' + tab);
+  active.style.background = '#2d6a4f';
+  active.style.color = 'white';
+  active.setAttribute('aria-selected','true');
+  // Panels
+  document.getElementById('tab-text').style.display = tab === 'text' ? 'block' : 'none';
+  document.getElementById('tab-url').style.display = tab === 'url' ? 'block' : 'none';
+}
+
+async function analyzeAll() {
+  const activeTab = document.getElementById('tab-btn-text').getAttribute('aria-selected') === 'true' ? 'text' : 'url';
+
+  if (activeTab === 'text') {
+    const text = document.getElementById('input-text').value.trim();
+    if (!text || text.length < 30) {
+      alert('Por favor introduce un texto más largo (mínimo 30 caracteres) · Please enter a longer text');
+      return;
+    }
+    analyze(text);
+  } else {
+    const url = document.getElementById('input-url').value.trim();
+    if (!url) { alert('Introduce una URL · Enter a URL'); return; }
+    const status = document.getElementById('url-status');
+    status.textContent = '⏳ Cargando página · Loading page...';
+    try {
+      const proxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+      const res = await fetch(proxy);
+      const data = await res.json();
+      
+      // Better HTML cleaning
+      let raw = data.contents || '';
+      // Remove scripts, styles, nav, header, footer
+      raw = raw.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ');
+      raw = raw.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ');
+      raw = raw.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, ' ');
+      raw = raw.replace(/<header[^>]*>[\s\S]*?<\/header>/gi, ' ');
+      raw = raw.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, ' ');
+      // Replace block tags with spaces
+      raw = raw.replace(/<\/(p|div|li|h[1-6]|section|article)>/gi, ' . ');
+      // Strip remaining tags
+      raw = raw.replace(/<[^>]+>/g, ' ');
+      // Decode HTML entities
+      raw = raw.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/&#[0-9]+;/g,' ');
+      // Clean whitespace
+      const text = raw.replace(/\s+/g,' ').replace(/\s\.\s\./g,'.').trim();
+      
+      if (!text || text.length < 100) {
+        status.innerHTML = '⚠️ Esta página no permite lectura automática.<br><strong>Cómo hacerlo manualmente:</strong><br>1. Abre la página en el navegador<br>2. Selecciona todo el texto (Ctrl+A o Cmd+A)<br>3. Cópialo (Ctrl+C)<br>4. Pégalo en la pestaña "Pegar texto"';
+        return;
+      }
+      status.textContent = `✅ Página cargada · ${text.split(/\s+/).length} palabras extraídas`;
+      analyze(text);
+    } catch(e) {
+      status.innerHTML = '⚠️ No se pudo cargar la URL.<br><strong>Cómo hacerlo manualmente:</strong><br>1. Abre la página en el navegador<br>2. Selecciona todo el texto (Ctrl+A o Cmd+A)<br>3. Cópialo (Ctrl+C)<br>4. Pégalo en la pestaña "Pegar texto"';
+    }
+  }
+}
+
+function reset() {
+  stopSpeech();
+  document.getElementById('input-text').value = '';
+  document.getElementById('input-url').value = '';
+  document.getElementById('char-count').textContent = '0 caracteres';
+  document.getElementById('url-status').textContent = '';
+  document.getElementById('results').classList.remove('visible');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
